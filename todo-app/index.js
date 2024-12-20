@@ -4,7 +4,7 @@ const { Pool } = require('pg');
 const cors = require('cors');
 
 const app = express();
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 3000;
 
 // CORS設定
 app.use(cors({
@@ -23,38 +23,9 @@ const pool = new Pool({
   }
 });
 
-// ヘータベース接続テスト
-pool.connect((err, client, release) => {
-  if (err) {
-    console.error('Error acquiring client', err.stack);
-    return;
-  }
-  client.query('SELECT NOW()', (err, result) => {
-    release();
-    if (err) {
-      return console.error('Error executing query', err.stack);
-    }
-    console.log('Database connected successfully');
-  });
-});
-
 // ヘルスチェックエンドポイント
 app.get('/', (req, res) => {
-  res.json({ 
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    port: port,
-    database: process.env.DATABASE_URL ? 'configured' : 'not configured'
-  });
-});
-
-// エラーハンドリングミドルウェア
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    error: 'Internal Server Error',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'An error occurred'
-  });
+  res.json({ status: 'ok' });
 });
 
 // タスク一覧取得
@@ -161,18 +132,6 @@ app.patch('/tasks/:id/progress', async (req, res) => {
 });
 
 // サーバー起動
-const server = app.listen(port, '0.0.0.0', () => {
+app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
-  console.log('Environment:', process.env.NODE_ENV);
-  console.log('Database URL configured:', !!process.env.DATABASE_URL);
-});
-
-// グレースフルシャットダウン
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received. Shutting down gracefully...');
-  server.close(() => {
-    console.log('Server closed');
-    pool.end();
-    process.exit(0);
-  });
 });
