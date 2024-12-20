@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo App</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .task-list {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.2s;
+        }
+        .task-item:hover {
+            background-color: #f8f9fa;
+        }
+        .task-item:last-child {
+            border-bottom: none;
+        }
+        .task-title {
+            flex-grow: 1;
+            margin-left: 10px;
+            font-size: 1.1em;
+        }
+        .completed {
+            text-decoration: line-through;
+            color: #888;
+        }
+        .task-meta {
+            font-size: 0.8em;
+            color: #666;
+            margin-left: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .add-task {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .add-task-form {
+            display: flex;
+            gap: 10px;
+        }
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .delete-btn {
+            background-color: #ff4444;
+            margin-left: 10px;
+        }
+        .delete-btn:hover {
+            background-color: #cc0000;
+        }
+        .error-message {
+            color: #ff4444;
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #ffebee;
+            border-radius: 4px;
+            display: none;
+        }
+        .priority-high {
+            color: #ff4444;
+            font-weight: bold;
+        }
+        .priority-medium {
+            color: #ff9800;
+        }
+        .priority-low {
+            color: #4CAF50;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Todo App</h1>
+    
+    <div id="errorMessage" class="error-message"></div>
+    
+    <div class="add-task">
+        <form class="add-task-form" onsubmit="event.preventDefault(); addTask();">
+            <input type="text" id="newTaskTitle" placeholder="新しいタスクを入力" autocomplete="off">
+            <button type="submit">追加</button>
+        </form>
+    </div>
+
+    <div class="task-list" id="taskList">
+        <div class="loading">読み込み中...</div>
+    </div>
+
+    <script>
+        // アプリケーションの状態管理
+        const state = {
+            isLoading: false,
+            tasks: [],
+            error: null
+        };
+
+        // DOMが読み込まれた後に初期化
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeApp();
+        });
+
+        // アプリケーションの初期化
+        async function initializeApp() {
+            try {
+                await loadTasks();
+            } catch (error) {
+                console.error('アプリケーションの初期化に失敗:', error);
+                showError('アプリケーションの初期化に失敗しました');
+            }
+        }
+
+        // エラーハンドリング用の関数
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            if (errorDiv) {
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                setTimeout(() => {
+                    errorDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        // ローディング表示の制御
+        function setLoading(loading) {
+            state.isLoading = loading;
+            const taskList = document.getElementById('taskList');
+            if (taskList) {
+                if (loading) {
+                    taskList.innerHTML = '<div class="loading">読み込み中...</div>';
+                }
+            }
+        }
+
+        // タスク一覧を取得して表示
+        async function loadTasks() {
+            if (state.isLoading) return;
+            setLoading(true);
+            
+            try {
+                const response = await fetch('/tasks');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const tasks = await response.json();
+                
+                const taskList = document.getElementById('taskList');
+                if (!tasks || !Array.isArray(tasks)) {
+                    throw new Error('Invalid response format');
+                }
+
+                state.tasks = tasks;
+                renderTasks();
+            } catch (error) {
+                console.error('タスクの取得に失敗:', error);
+                showError('タスクの取得に失敗しました');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // タスク一覧の描画
+        function renderTasks() {
+            const taskList = document.getElementById('taskList');
+            if (!taskList) return;
+
+            if (state.tasks.length === 0) {
+                taskList.innerHTML = '<div class="loading">タスクがありません</div>';
+                return;
+            }
+
+            taskList.innerHTML = state.tasks.map(task => `
+                <div class="task-item">
+                    <input type="checkbox" 
+                           ${task.completed ? 'checked' : ''} 
+                           onchange="toggleTask(${task.id})">
+                    <span class="task-title ${task.completed ? 'completed' : ''}">
+                        ${escapeHtml(task.title)}
+                    </span>
+                    <span class="task-meta">
+                        <span class="priority-${task.priority.toLowerCase()}">${task.priority}</span>
+                        <span>${escapeHtml(task.category || '未分類')}</span>
+                    </span>
+                    <button onclick="deleteTask(${task.id})" class="delete-btn">削除</button>
+                </div>
+            `).join('');
+        }
+
+        // HTMLエスケープ
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // 新しいタスクを追加
+        async function addTask() {
+            const titleInput = document.getElementById('newTaskTitle');
+            if (!titleInput) return;
+
+            const title = titleInput.value.trim();
+            if (!title) {
+                showError('タスクのタイトルを入力してください');
+                return;
+            }
+
+            try {
+                const response = await fetch('/tasks', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        title,
+                        priority: 'medium',
+                        category: '未分類'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                titleInput.value = '';
+                await loadTasks();
+            } catch (error) {
+                console.error('タスクの追加に失敗:', error);
+                showError('タスクの追加に失敗しました');
+            }
+        }
+
+        // タスクの完了状態を切り替え
+        async function toggleTask(id) {
+            if (!id) return;
+
+            try {
+                const response = await fetch(`/tasks/${id}/toggle`, {
+                    method: 'PATCH'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                await loadTasks();
+            } catch (error) {
+                console.error('タスクの更新に失敗:', error);
+                showError('タスクの更新に失敗しました');
+            }
+        }
+
+        // タスクを削除
+        async function deleteTask(id) {
+            if (!id || !confirm('このタスクを削除してもよろしいですか？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/tasks/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                await loadTasks();
+            } catch (error) {
+                console.error('タスクの削除に失敗:', error);
+                showError('タスクの削除に失敗しました');
+            }
+        }
+
+        // イベントリスナーの設定
+        const titleInput = document.getElementById('newTaskTitle');
+        if (titleInput) {
+            titleInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addTask();
+                }
+            });
+        }
+    </script>
+</body>
+</html> 
