@@ -1,0 +1,382 @@
+開発プロセス:
+  基本情報:
+    APIエンドポイント: "https://todo-app-production-dfbf.up.railway.app"
+    フロントエンドURL: "https://todo-app-twakasa03.vercel.app"
+    GitHubリポジトリ: "https://github.com/twakasa03/todo-app.git"
+    デプロイ環境:
+      バックエンド: "Railway"
+      フロントエンド: "Vercel"
+      データベース: "PostgreSQL on Railway"
+    
+    技術スタック:
+      フロントエンド:
+        言語: "HTML, CSS, JavaScript (Vanilla)"
+        外部ライブラリ:
+          - "SortableJS: 1.15.0 (ドラッグ&ドロップ機能)"
+          - "Material Icons (UIアイコン)"
+      
+      バックエンド:
+        言語: "Node.js"
+        フレームワーク: "Express"
+        主要パッケージ:
+          - "express: ^4.18.2"
+          - "pg: ^8.11.3"
+          - "cors: ^2.8.5"
+          - "dotenv: ^16.3.1"
+      
+      データベース:
+        - "PostgreSQL 15.x"
+        - "DBeaver 23.x (DB管理ツール)"
+
+    API仕様:
+      エンドポイント一覧:
+        タスク管理:
+          - "GET /tasks - タスク一覧取得"
+          - "POST /tasks - 新規タスク作成"
+          - "GET /tasks/:id - 個別タスク取得"
+          - "PATCH /tasks/:id - タスク更新"
+          - "DELETE /tasks/:id - タスク削除"
+          - "PATCH /tasks/:id/position - タスク位置更新"
+        サブタスク:
+          - "POST /tasks/:id/subtasks - サブタスク追加"
+          - "PUT /subtasks/:id - サブタスク更新"
+          - "DELETE /subtasks/:id - サブタスク削除"
+        グループ管理:
+          - "POST /tasks/groups - グループ作成"
+          - "GET /tasks?status=all - グループ一覧取得"
+        進捗管理:
+          - "PATCH /tasks/:id/progress - タスク進捗更新"
+
+    環境変数:
+      開発環境:
+        - "PORT=3000"
+        - "DB_USER=postgres"
+        - "DB_PASSWORD=your_password"
+        - "DB_HOST=localhost"
+        - "DB_PORT=5432"
+        - "DB_NAME=todoapp"
+      本番環境(Railway):
+        - "PORT=自動割当"
+        - "DATABASE_URL=postgresql://..."
+        - "CORS_ORIGIN=https://todo-app-twakasa03.vercel.app"
+
+    セキュリティ設定:
+      - "CORS設定: フロントエンドドメインのみ許可"
+      - "環境変数による機密情報の管理"
+      - "SQLインジェクション対策: プ��ペアドステートメント使用"
+
+    実装済み機能:
+      タスク管理:
+        - "タスクの作成・表示・更新・削除（CRUD操作）"
+        - "タスクの完了状態の切り替え"
+        - "タスクの優先度設定（高・中・低）"
+        - "期限日の設定と管理"
+        - "カテゴリー分類"
+        - "タグ付け機能"
+        - "進捗管理（ステップ数による進捗表示）"
+        - "サブタスク機能"
+        - "タスクのグループ化"
+        - "タスクの並び替え（ドラッグ&ドロップ）"
+      
+      検索・フィルタリング:
+        - "タスク検索機能"
+        - "ステータスによるフィルタリング（全て・未完了・完了）"
+        - "カテゴリーによるフィルタリング"
+        - "並び替え機能（カスタム順・締切日・優先度・作成日時）"
+      
+      UI/UX:
+        - "ダークモード/ライトモードの切り替え"
+        - "レスポンシブデザイン"
+        - "Material Iconsの使用"
+        - "アニメーション効果"
+        - "直感的なドラッグ&ドロップ操作"
+      
+      データベース構造:
+        テーブル:
+          tasks:
+            - "id (SERIAL, PK)"
+            - "title (TEXT, NOT NULL)"
+            - "completed (BOOLEAN)"
+            - "priority (TEXT)"
+            - "due_date (DATE)"
+            - "category (TEXT)"
+            - "tags (TEXT[])"
+            - "total_steps (INTEGER)"
+            - "progress (INTEGER)"
+            - "position (INTEGER)"
+            - "group_id (INTEGER)"
+            - "created_at (TIMESTAMP)"
+            - "updated_at (TIMESTAMP)"
+
+  課題背景:
+    - "フロントエンド(HTML/JS)からバックエンド(Node.js/Express)とPostgreSQLへデータの送受信を行う小規模Webアプリを完成させる"
+    - "フロント、バックエンド、DB、デプロイを一気通貫で実行し、点と点を線で繋ぐ経験を得る"
+    - "DBeaverを活用してPostgreSQLのデータ操作をGUIで行い、学習のハードルを下げる"
+
+  前提:
+    - "GitHubアカウント、Railwayアカウント、Netlify/Vercelアカウントが用意済み"
+    - "Node.jsとnpmがローカルで動作可能"
+    - "DBeaverがインストールされている"
+    - "PostgreSQLサーバーがローカルで起動している(サービスとして動かすか、DockerでもOK)"
+
+  ステップ1: ローカル開発環境セットアップ
+    目的: "Node.js/Expressとpgライブラリでバックエンド基盤を用意"
+    手順:
+      - "Node.js LTS版インストール済みを確認: `node -v`, `npm -v`"
+      - "プロジェクトディレクトリ作成: `mkdir todo-app && cd todo-app`"
+      - "`npm init -y`でpackage.json生成"
+      - "`npm install express pg cors dotenv`で必要ライブラリ導入"
+    確認:
+      - "package.json, node_modulesが生成されている"
+      - "基本的なNode.jsプロジェクト環境が整た"
+
+  ステップ2: 環境変数管理
+    目的: "DB接続情報やポート番号を.envで管理し、コードから分離"
+    手順:
+      - "`.env`ファイルをプロジェクトルートに作成"
+      - "例:  
+         PORT=3000  
+         DB_USER=postgresユーザ名  
+         DB_PASSWORD=パスワード  
+         DB_HOST=localhost  
+         DB_PORT=5432  
+         DB_NAME=todoapp"
+      - ".gitignoreに`.env`を追加"
+    確認:
+      - "環境変数を`.env`で安全管理できる状態"
+
+  ステップ3: PostgreSQLローカルDB準備 (DBeaver活用)
+    目的: "DBeaverを使い、GUIでDBやテーブルを容易に作成"
+    手順:
+      - "DBeaver起動、`Database > New Database Connection`からPostgreSQL選択"
+      - "Host: localhost, Port: 5432, DB: postgres, User: postgres, Password: 設定済みのもの"
+      - "接続成功後、DBeaverのDatabase Navigatorで右クリック→Create→Database"
+      - "Database名を`todoapp`に設定し作成"
+      - "todoappデータベースに接続し、`tasks`テーブルを作成: Table作成ウィザードから`id`(SERIAL, PK), `title`(TEXT, NOT NULL)を設定してCREATE"
+    確認:
+      - "todoappデータベース配下にtasksテーブルが表示されている"
+    改善ポイント:
+      - "DBeaverで動挿入やクエリ実行（`SELECT * FROM tasks;`）GUI上で確認可能"
+
+  ステップ4: バックエンドコード作成（ローカル）
+    目的: "Expressサーバで/tasksエンドポイントを用意、PostgreSQLと接続してCRUD実現"
+    手順:
+      - "index.js作成し、`require('dotenv').config()`で環境変数読込"
+      - "pgのPoolを使いDB接続: connection情報は.env参照"
+      - "GET /tasksでtasks全件取得、POST /tasksで新規INSERT"
+      - "エラーハンドリングにtry/catchを導入"
+    確認:
+      - "`node index.js`でサーバー起動"
+      - "ブラウザで`http://localhost:3000/tasks`アクセス→空配列確認"
+      - "DBeaver上でタスクを手動INSERTしてGET確認、POSTでINSERTしGETで反映確認"
+    改善ポイント:
+      - "ログ出力やステータスコード適正化も後で可能"
+
+  ステップ5: フロントエンド超シンプル作成（ローカル連携）
+    目的: "HTML+JSでバックエンドAPIを叩いてタスク表示・追加"
+    手順:
+      - "index.htmlにフォームと`fetch()`実装用スクリプト記述"
+      - "submit時POST→tasks追加→画面更新でGET"
+    確認:
+      - "ローカルでindex.htmlをブラウザで開く"
+      - "タスク追加が正常に行え、リストに反映さる"
+    改善ポイント:
+      - "CSSで見た目改善やReact/Vue/Next.js導入なども将来視野に"
+
+  ステップ6: GitHubでバージョン管理
+    目的: "コードをリモートリポジトリに保管し、デプロイの準備"
+    手順:
+      - "GitHub新規リポジトリ(todo-app)作成"
+      - "ローカルで`git init` → `git add .` → `git commit -m 'init'`"
+      - "`git remote add origin <repo URL>` → `git push origin main`"
+    確認:
+      - "GitHubでソースが閲覧可能"
+    改善ポイント:
+      - "README.md整備、Issueを立ててタスク管理なども可能"
+
+  ステップ7: Railwayでバックエンドデプロイ
+    目的: "本番環境でAPIとDBをホストし、公開URLでアクセス可能に"
+    手順:
+      - "Railwayアカウント作成"
+      - "New Project → Provision PostgreSQLで本番用DB作成"
+      - "New Project → Deploy from GitHubでリポジトリ選択しデプロイ"
+      - "環境変数設定画面でDATABASE_URLなど設定、.envを参考にRailway側に入力"
+      - "RailwayのDBコンソールで`tasks`テーブルCREATE（DBeaverで行った設定をRailway側DBでも同様にSQL実行）"
+        - "DBeaverでRailwayのDBにも新規接続してGUIでテーブル作成してもOK (接続情報はRailwayダッシュボードから確認)"
+    確認:
+      - "Railwayの公開URLで`/tasks`にアクセスし、JSON結果が返ること"
+    改善ポイント:
+      - "ローカルと本番で.env分ける、CI/CD整備など"
+
+  ステップ8: フロントエンドをNetlify/Vercelでデプロイ
+    目的: "フロントをパブリックURLでホスティングし、RailwayのAPIと連携"
+    手順:
+      - "Netlify/VercelにGitHub連携で同じリポジトリ選択"
+      - "フロントのfetch先URLを`http://localhost:3000`→`https://your-railway-app-url`に書き換え"
+      - "git pushするとNetlify/Vercelが自動ビルド・デプロイ"
+    確認:
+      - "Netlify/VercelのURLにアクセスし、タスクの追加・表示が問題なく動作"
+    改善ポイント:
+      - "CORS設定適正化、HTTPS通信確認"
+
+  ステップ9: 継続的な改善
+    目的: "完成したミニアプリを土台に発展させる"
+    手順:
+      - "READMEで公開URL、セットアップ手順を明記"
+      - "DBeaverでRailway上のDBをGUI操作して、本番DB変更も簡易化"
+      - "テストツール導入（Jest）、ロギング強化、TypeScript化検討"
+    成果:
+      - "DBeaverを介してGUIでDB管理、Railwayでホスティング、Netlify/Vercelでフロント公まで一貫"
+
+  ステップ10: 挫折防止の工夫
+    目的: "モチベーション維持と習慣化"
+    手順:
+      - "1日1タスクでも良い、焦らず小さな成功を積み上げる"
+      - "エラーが出たらDBeaverでDB状況を確認し、問題の範囲を特定"
+      - "技術コミュニティでのQ&A活用"
+    成果:
+      - "学習が継続的に進む環境づくり"
+
+  デプロイ手順:
+    Railway:
+      初回デプロイ:
+        - "GitHubリポジトリをRailwayに接続"
+        - "New Project → Deploy from GitHub"
+        - "PostgreSQLアドオンを追加"
+        - "環境変数の設定"
+        - "自動デプロイの確認"
+      データベースマイグレーション:
+        - "Railway提供のPostgreSQLの接続情報を取得"
+        - "DBeaverで本番DBに接続"
+        - "テーブル作成とスキーマ同期"
+      更新デプロイ:
+        - "git pushで自動デプロイ"
+        - "デプロイログの確認"
+    
+    Vercel:
+      初回デプロイ:
+        - "GitHubリポジトリをVercelに接続"
+        - "New Project → Import Git Repository"
+        - "Build設定は不要（静的ファイル）"
+        - "環境変数の設定（必要な場合）"
+      更新デプロイ:
+        - "git pushで自動デプロイ"
+        - "デプロイログの確認"
+
+  トラブルシューティング:
+    データベース関連:
+      接続エラー:
+        - "環境変数の確認"
+        - "ファイアウォール設定の確認"
+        - "接続文字列のフォーマット確認"
+      クエリエラー:
+        - "DBeaverでクエリの動作確認"
+        - "プリペアドステートメントの確認"
+        - "トランザクション処理の確認"
+    
+    API関連:
+      CORS エラー:
+        - "CORS設定の確認"
+        - "許可オリジンの確認"
+        - "プリフライトリクエストの対応確認"
+      404エラー:
+        - "ルーティング設定の確認"
+        - "URLのタイプミス確認"
+        - "HTTPメソッドの確認"
+      500エラー:
+        - "サーバーログの確認"
+        - "例外処理の確認"
+        - "DB接続状態の確認"
+
+    フロントエンド関連:
+      表示エラー:
+        - "ブラウザのコンソールログ確認"
+        - "ネットワークタブでAPI通信確認"
+        - "JavaScriptエラーの確認"
+      機能エラー:
+        - "イベントハンドラの動作確認"
+        - "データの型・形式の確認"
+        - "非同期処理の確認"
+
+  パフォーマンス最適化:
+    フロントエンド:
+      レンダリング:
+        - "不要なDOM更新の削減"
+        - "仮想化リストの検討"
+        - "画像の最適化"
+      JavaScript:
+        - "コード分割の検討"
+        - "遅延読み込みの実装"
+        - "メモ化の活用"
+      CSS:
+        - "未使用CSSの削除"
+        - "アニメーションの最適化"
+        - "メディアクエリの最適化"
+    
+    バックエンド:
+      データベース:
+        - "インデックスの最適化"
+        - "クエリの最適化"
+        - "コネクションプールの調整"
+      API:
+        - "レスポンスのキャッシュ"
+        - "ページネーションの実装"
+        - "バッチ処理の最適化"
+      セキュリティ:
+        - "レートリミットの実装"
+        - "入力値のバリデーション強化"
+        - "エラーハンドリングの改善"
+
+  今後の開発予定:
+    認証・認可:
+      - "ユーザー認証（JWT）"
+      - "ソーシャルログイン"
+      - "権限管理システム"
+    
+    機能拡張:
+      タスク管理:
+        - "定期タスクの自動作成"
+        - "タスクの依存関係管理"
+        - "タスクのインポート/エクスポート"
+      コラボレーション:
+        - "タスクの共有機能"
+        - "チーム管理機能"
+        - "コメント機能"
+      通知:
+        - "期限前リマインダー"
+        - "メール通知"
+        - "プッシュ通知"
+    
+    技術的改善:
+      フロントエンド:
+        - "React/Vue.jsへの移行"
+        - "TypeScript導入"
+        - "テストカバレッジ向上"
+      バックエンド:
+        - "マイクロサービス化検討"
+        - "キャッシュ層の追加"
+        - "ログ管理の強化"
+      インフラ:
+        - "CI/CDパイプライン整備"
+        - "モニタリング強化"
+        - "バックアップ体制強化"
+
+  メンテナンス計画:
+    定期タスク:
+      日次:
+        - "エラーログの確認"
+        - "バックアップの確認"
+        - "パフォーマンスモニタリング"
+      週次:
+        - "セキュリティアップデート"
+        - "依存パッケージの更新確認"
+        - "使用状況の分析"
+      月次:
+        - "大規模なバージョンアップ検討"
+        - "パフォーマンス最適化"
+        - "ユーザーフィードバック対応"
+
+    障害対応:
+      - "障害検知の自動化"
+      - "復旧手順の整備"
+      - "ユーザーへの通知体制"

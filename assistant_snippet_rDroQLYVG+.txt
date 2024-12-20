@@ -1,0 +1,86 @@
+1|<!DOCTYPE html>
+2|<html lang="ja">
+3|<head>
+4|    <meta charset="UTF-8">
+5|    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+6|    <title>TODOアプリ</title>
+7|    <style>
+8|        body {
+9|            font-family: Arial, sans-serif;
+10|            max-width: 800px;
+11|            margin: 0 auto;
+12|            padding: 20px;
+13|        }
+14|        .task-form {
+15|            margin-bottom: 20px;
+16|        }
+17|        .task-list {
+18|            list-style: none;
+19|            padding: 0;
+20|        }
+21|        .task-item {
+22|            padding: 10px;
+23|            border-bottom: 1px solid #ddd;
+24|        }
+25|    </style>
+26|</head>
+27|<body>
+28|    <h1>TODOアプリ</h1>
+29|    <div class="task-form">
+30|        <form id="taskForm">
+31|            <input type="text" id="taskInput" placeholder="新しいタスクを入力" required>
+32|            <button type="submit">追加</button>
+33|        </form>
+34|    </div>
+35|    <ul id="taskList" class="task-list"></ul>
+36|
+37|    <script>
+38|        const API_URL = 'http://localhost:3000';
+39|
+40|        // タスク一覧を取得して表示
+41|        async function loadTasks() {
+42|            try {
+43|                const response = await fetch(`${API_URL}/tasks`);
+44|                const tasks = await response.json();
+45|                const taskList = document.getElementById('taskList');
+46|                taskList.innerHTML = '';
+47|                tasks.forEach(task => {
+48|                    const li = document.createElement('li');
+49|                    li.className = 'task-item';
+50|                    li.textContent = task.title;
+51|                    taskList.appendChild(li);
+52|                });
+53|            } catch (error) {
+54|                console.error('タスクの取得に失敗しました:', error);
+55|            }
+56|        }
+57|
+58|        // 新しいタスクを追加
+59|        document.getElementById('taskForm').addEventListener('submit', async (e) => {
+60|            e.preventDefault();
+61|            const input = document.getElementById('taskInput');
+62|            const title = input.value.trim();
+63|
+64|            try {
+65|                const response = await fetch(`${API_URL}/tasks`, {
+66|                    method: 'POST',
+67|                    headers: {
+68|                        'Content-Type': 'application/json',
+69|                    },
+70|                    body: JSON.stringify({ title }),
+71|                });
+72|
+73|                if (response.ok) {
+74|                    input.value = '';
+75|                    loadTasks();
+76|                }
+77|            } catch (error) {
+78|                console.error('タスクの追加に失敗しました:', error);
+79|            }
+80|        });
+81|
+82|        // 初期表示
+83|        loadTasks();
+84|    </script>
+85|</body>
+86|</html> 
