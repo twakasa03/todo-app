@@ -1,13 +1,18 @@
 -- tasksテーブルの作成
 CREATE TABLE IF NOT EXISTS tasks (
     id SERIAL PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
+    title TEXT NOT NULL,
     completed BOOLEAN DEFAULT false,
-    due_date TIMESTAMP,
-    priority VARCHAR(50) DEFAULT 'medium',
-    category VARCHAR(100),
+    priority TEXT CHECK (priority IN ('high', 'medium', 'low')),
+    due_date DATE,
+    category TEXT,
     tags TEXT[],
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    total_steps INTEGER DEFAULT 0,
+    progress INTEGER DEFAULT 0,
+    position INTEGER,
+    group_id INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- インデックスの作成

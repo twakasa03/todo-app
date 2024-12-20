@@ -11,31 +11,25 @@ const pool = new Pool({
 });
 
 async function migrate() {
-  const client = await pool.connect();
   try {
-    console.log('データベースマイグレーションを開始します...');
+    const client = await pool.connect();
+    console.log('Connected to database');
 
-    // マイグレーションファイルの読み込み
     const migrationSQL = fs.readFileSync(
       path.join(__dirname, '..', 'migrations', 'create_tasks_table.sql'),
       'utf8'
     );
 
-    // マイグレーションの実行
+    console.log('Executing migration...');
     await client.query(migrationSQL);
-    console.log('マイグレーションが正常に完了しました！');
+    console.log('Migration completed successfully');
 
-  } catch (err) {
-    console.error('マイグレーション中にエラーが発生しました:', err);
-    throw err;
-  } finally {
     client.release();
     await pool.end();
+  } catch (err) {
+    console.error('Migration failed:', err);
+    process.exit(1);
   }
 }
 
-// マイグレーションの実行
-migrate().catch(err => {
-  console.error('Critical error:', err);
-  process.exit(1);
-}); 
+migrate(); 
