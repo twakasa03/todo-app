@@ -6,6 +6,19 @@ const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// タスク取得時のソートで許可するカラム
+const ALLOWED_SORT_FIELDS = new Set([
+  'id',
+  'title',
+  'due_date',
+  'priority',
+  'category',
+  'created_at',
+  'updated_at',
+  'position',
+  'progress'
+]);
+
 // CORS設定
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'https://todo-app-twakasa03.vercel.app',
@@ -59,8 +72,9 @@ app.get('/tasks', async (req, res) => {
       const [field, direction] = sort.split(':');
       if (field === 'position') {
         query += ' ORDER BY position';
-      } else {
-        query += ` ORDER BY ${field} ${direction === 'desc' ? 'DESC' : 'ASC'}`;
+      } else if (ALLOWED_SORT_FIELDS.has(field)) {
+        const dir = direction === 'desc' ? 'DESC' : 'ASC';
+        query += ` ORDER BY ${field} ${dir}`;
       }
     }
 
